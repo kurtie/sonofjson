@@ -110,6 +110,7 @@ trait Implicits {
     case b: Boolean => booleanToJValue(b)
     case l: List[_] => listToJValue(l)
     case m: Map[_, _] => mapToJValue(m.asInstanceOf[Map[String, _]])
+    case _ => JNull
   }
 
   implicit def jvalueTo[T](value: JValue)(implicit extract: Decoder[T], tag: TypeTag[T]): T =

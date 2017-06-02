@@ -88,9 +88,10 @@ package object sonofjson extends Implicits {
 
   case object JNull extends JValue
 
-  def parse(str: String) = Parser.parse(str)
+  def fromJson(str: String) = Parser.parse(str)
 
   def parse(reader: Reader) = Parser.parse(reader)
+
 
   def render(value: JValue, out: Appendable): Unit = value match {
     case JObject(elements) =>
@@ -132,11 +133,65 @@ package object sonofjson extends Implicits {
       out.append(bool.toString)
   }
 
-  def render(value: JValue): String = {
+  /** Pretty printing */
+  val CR= "\n"
+  val INDENT= "   "
+  def render(value: JValue, out: Appendable, tab:String): Unit = value match {
+    case JObject(elements) =>
+      def field(key: String, value: JValue) = {
+        out.append(s""""${escape(key)}":""")
+        render(value, out, tab + INDENT)
+      }
+      @tailrec
+      def fields(elements: List[(String, JValue)], prefix: String = "") {
+        if (!elements.isEmpty) {
+          val tab2= tab + INDENT
+          val next = elements.head
+          out.append(prefix)
+          field(next._1, next._2)
+          fields(elements.tail, "," + CR + tab2)
+        }
+      }
+      out.append("{"+CR)
+      fields(elements.toList, tab + INDENT)
+      out.append(CR + tab+"}")
+    case JArray(elements) =>
+      @tailrec
+      def allElements(elements: List[JValue], prefix: String = "") {
+        if (!elements.isEmpty) {
+          val tab2= tab + INDENT
+          out.append(prefix)
+          render(elements.head, out, tab2)
+          allElements(elements.tail, "," + CR + tab2)
+        }
+      }
+      out.append("["+CR)
+      allElements(elements.toList, tab + INDENT)
+      out.append(CR + tab + "]")
+    case JString(str) =>
+      out.append(s""""${escape(str)}"""")
+    case JNumber(number) =>
+      out.append(number.toString())
+    case JNull =>
+      out.append("null")
+    case JBool(bool) =>
+      out.append(bool.toString)
+  }
+
+
+  def toJson(value: JValue): String = {
     val builder = new java.lang.StringBuilder()
     render(value, builder)
     builder.toString
   }
+
+  def toPrettyJson(value: JValue): String = {
+    val builder = new java.lang.StringBuilder()
+    render(value, builder, "")
+    builder.toString
+  }
+
+
 
   object Parser extends JavaTokenParsers {
 
@@ -198,9 +253,10 @@ package object sonofjson extends Implicits {
         JArray(mutable.Buffer(args: _*))
     }
   }
-
+/*
   // Need a faster and less hacky escaping solution
   private def escape(raw: String): String =
     Literal(Constant(raw)).toString.stripPrefix("\"").stripSuffix("\"")
-
+*/
+ private def escape(raw: String): String = raw.replace("\\","\\\\").replace("\"", "\\\"").replace("\b", "\\b").replace("\f", "\\f").replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t")
 }
