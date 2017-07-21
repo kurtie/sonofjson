@@ -258,5 +258,5 @@ package object sonofjson extends Implicits {
   private def escape(raw: String): String =
     Literal(Constant(raw)).toString.stripPrefix("\"").stripSuffix("\"")
 */
- private def escape(raw: String): String = raw.replace("\\","\\\\").replace("\"", "\\\"").replace("\b", "\\b").replace("\f", "\\f").replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t")
+ private def escape(raw: String): String = raw.replace("\\","\\\\").replace("\"", "\\\"").replace("\b", "\\b").replace("\f", "\\f").replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t").replaceAll("[\u0000-\u001f]", "")
 }
